@@ -1,13 +1,13 @@
-import mongoose, { model, Schema ,Types} from "mongoose";
+import mongoose, { model, Schema } from "mongoose";
 const MessageSchema =new Schema ({
     sender:{
-        type:Types.ObjectId,
+        type:Schema.Types.ObjectId,
         ref:"User",
         required:true
 
     },
     chat:{
-        type:Types.ObjectId,
+        type:Schema.Types.ObjectId,
         ref:"Chat",
         required:true
     },
@@ -26,4 +26,4 @@ const MessageSchema =new Schema ({
 
 
 
-export const Message = mongoose.models.Message ||   model("Message" , MessageSchema)
+export const Message =    model("Message" , MessageSchema)

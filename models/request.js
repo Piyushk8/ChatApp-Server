@@ -1,7 +1,7 @@
-import mongoose, { model, Schema ,Types} from "mongoose";
+import mongoose, { model, Schema} from "mongoose";
 const RequestSchema =new Schema ({
     sender:{
-        type:Types.ObjectId,
+        type:Schema.Types.ObjectId,
         ref:"User"
     },
     status:{
@@ -10,7 +10,7 @@ const RequestSchema =new Schema ({
         enum:["pending" , "rejected" , "accepted"]
     },
     receiver:{
-        type:Types.ObjectId,
+        type:Schema.Types.ObjectId,
         ref:"User",
         required:true
     }
@@ -20,4 +20,4 @@ const RequestSchema =new Schema ({
 
 
 
-export const Request = mongoosee.models.Request ||   model("Request" , RequestSchema)
+export const Request =   model("Request" , RequestSchema)

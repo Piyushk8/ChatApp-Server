@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, Types } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
 const schema = new Schema(
   {
@@ -11,12 +11,12 @@ const schema = new Schema(
       default: false,
     },
     creator: {
-      type: Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
     },
     members: [
       {
-        type: Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "User",
       },
     ],
@@ -26,4 +26,4 @@ const schema = new Schema(
   }
 );
 
-export const Chat =mongoose.models.Chat || model("Chat", schema);
+export const Chat =  model("Chat", schema);

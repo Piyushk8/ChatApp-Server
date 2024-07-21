@@ -4,7 +4,7 @@ import {Chat} from "../models/chat.js"
 import {User} from "../models/user.js"
 import {Message} from "../models/message.js"
 import { deleteFileCloudinary, emitEvent } from "../utils/feature.js";
-import {alert, NEW_ATTACHMENT, NEW_MESSAGE_ALERT, refetch_chats} from "../constants/event.js"
+import {ALERT, NEW_ATTACHMENT, NEW_MESSAGE_ALERT, REFETECH_CHATS} from "../constants/event.js"
 
 
 const newGroupChat = TryCatch(async(req,res,next)=>{
@@ -201,7 +201,7 @@ const leaveGroup = TryCatch(async(req,res,next)=>{
 const SendAttachment = TryCatch(async(req,res,next)=>{
     const{ chatId }= req.body
    
-
+    
     const chat = await Chat.findById(chatId);
     const me = await User.findById(req.user)
     console.log(me)
@@ -324,6 +324,33 @@ const deleteChat =TryCatch(async(req,res,next)=>{
    })
 });
 
+const getMessages = TryCatch(async(req,res,next)=>{
+
+    const chatId = req.params.id;
+    const {page = 1 } = req.query;
+    const messagePerPage =20;
+    const skip = (page -1)*messagePerPage;
+    const [messages,totalMessageCount] = await Promise.all([
+        Message.find({
+            chat:chatId
+        }).sort({createdAt:-1})
+        .skip(skip)
+        .limit(messagePerPage)
+        .populate("sender","name avatar")
+        .lean(),
+
+        Message.countDocuments({chat:chatId})
+    
+    ])
+
+
+    res.status(200).json({
+        success:true,
+        message:messages.reverse() ,
+        totalMessageCount,
+    totalPages:Math.ceil(totalMessageCount/messagePerPage)   })
+
+})
 
 
 
@@ -331,5 +358,5 @@ const deleteChat =TryCatch(async(req,res,next)=>{
 
 
 export {getChatDetails, newGroupChat,getMyGroup ,addMembers, getMyChat ,RemoveMember,leaveGroup ,SendAttachment
-    ,RenameGroup, deleteChat
+    ,RenameGroup, deleteChat,getMessages
 }
