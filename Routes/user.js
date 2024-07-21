@@ -19,5 +19,5 @@ UserRouter.delete("/acceptRequest",AuthMiddleware,acceptRequest)
 UserRouter.get("/search",AuthMiddleware,SearchUser)
 UserRouter.get("/notifications",AuthMiddleware,getNotifications)
 UserRouter.get("/friends/:id",getMyFriends)
-UserRouter.use(errorMiddleware);
+// UserRouter.use(errorMiddleware);
 export default UserRouter;

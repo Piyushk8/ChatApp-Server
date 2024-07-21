@@ -127,23 +127,24 @@ const SendRequest = TryCatch(async(req,res,next)=>{
 })
 
 const acceptRequest = TryCatch(async(req,res,next)=>{
-
+    
     const {RequestId ,accept} = req.body;
-
+   
+   
     // const request = await Request.deleteOne({
     //     $or:[
     //         {sender:userId,receiver:req.user},
     //         {sender:req.user , receiver:userId}
     //     ]
     // })
-
-    const request = Request.findById(RequestId)
+   
+    const request = await Request.findById(RequestId)
     .populate("sender","name")
     .populate("receiver" , "name")
-
+   
     if(!request) return next(new ErrorHandler("not Found Request",404))
     
-    if(request.receiver.toString() !== req.user.toString()) return next(new ErrorHandler("Receiver and me are not same",400))
+    if(request.receiver._id.toString() !== req.user.toString()) return next(new ErrorHandler("Receiver and me are not same",400))
     
     if(!accept){
         await request.deleteOne();
@@ -178,7 +179,7 @@ const getNotifications = TryCatch(async(req,res,next)=>{
         receiver:req.user
 
     },{_id:1,sender:1}).populate("sender","name avatar")
-    
+    console.log(requests)
     return res.status(200).json({
         success:true,
         requests

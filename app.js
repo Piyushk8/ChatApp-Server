@@ -1,11 +1,8 @@
 import express, { urlencoded } from "express"
-import UserRouter from "./Routes/user.js";
 import mainRouter from "./Routes/mainRouter.js";
 import { connectDB } from "./utils/feature.js";
 import dotenv from 'dotenv';
 import cookieParser from "cookie-parser";
-import { createUser } from "./seeders/user.js";
-import { createGroupChats, createMessages, createMessagesInAChat, createSingleChats } from "./seeders/chat.js";
 import { Server } from "socket.io"; 
 import  { createServer } from "http"
 import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "./constants/event.js";
@@ -18,8 +15,7 @@ import {v2 as cloudinary} from "cloudinary"
 
 
 dotenv.config();
-
-const app  =express();
+const app=express();
 const server =  createServer(app)
 const io = new Server(server,{})
 connectDB(process.env.MONGODB_URI)
@@ -36,11 +32,11 @@ app.use(cors({
     credentials: true, // Enable the Access-Control-Allow-Credentials header
     optionsSuccessStatus: 204
   }))
-// createGroupChats(10);
+// createGroupChats(10);//faker
 //middleware used here
 app.use(express.json())
 app.use(cookieParser())
-// app.use(urlencoded())
+
 
 //all the current users connected to the circuitorserver 
 const socketIds = new Map();
