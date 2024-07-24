@@ -17,7 +17,15 @@ import {v2 as cloudinary} from "cloudinary"
 dotenv.config();
 const app=express();
 const server =  createServer(app)
-const io = new Server(server,{})
+
+const io = new Server(server, {
+    cors: {
+        origin: ['http://localhost:5173', 'http://localhost:4173'],
+        methods: ['GET', 'POST'],
+        credentials: true,
+    }
+});
+
 connectDB(process.env.MONGODB_URI)
 
 cloudinary.config({
