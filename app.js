@@ -11,7 +11,7 @@ import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
 import cors from "cors"
 import {v2 as cloudinary} from "cloudinary"
-
+import { SocketAuthenticator } from "./middlewares/Auth.js";
 
 
 dotenv.config();
@@ -49,10 +49,8 @@ app.use(cookieParser())
 //all the current users connected to the circuitorserver 
 const socketIds = new Map();
 io.on("connection", (socket)=>{
-    const user = {
-        _id:"ss ",
-        name:"piyush"
-    }
+   const user = socket.user;
+//    console.log(user)
     socketIds.set(user._id,socket.id)
     console.log(`${socket.id} connected to server `)
 
@@ -90,6 +88,14 @@ io.on("connection", (socket)=>{
 
 //main app routes start here
 app.use("/api/v1/",mainRouter);
+//SocketAuthentications
+io.use((socket, next)=>{
+    cookieParser()(socket.request , socket.request.resume, async(err)=>{
+        await SocketAuthenticator(err , socket ,next)
+        next();
+    })
+
+})
 const PORT =3000;
 server.listen(PORT, ()=>{
 console.log(`Server is running on port ${PORT} in ${process.env.NODE_ENV} mode`)
