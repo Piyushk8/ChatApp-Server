@@ -48,10 +48,12 @@ app.use(cookieParser())
 
 //all the current users connected to the circuitorserver 
 const socketIds = new Map();
+
 io.on("connection", (socket)=>{
+
    const user = socket.user;
-//    console.log(user)
-    socketIds.set(user._id,socket.id)
+//    console.log(socket)
+    socketIds.set(user._id.toString(),socket.id)
     console.log(`${socket.id} connected to server `)
 
     socket.on("disconnect",()=>{
@@ -59,7 +61,7 @@ io.on("connection", (socket)=>{
         socketIds.delete(user._id)
     })
     socket.on(NEW_MESSAGE,async({chatId,message,members})=>{
-        
+       
         const messageForRealTime={
             content:message,
             _id:uuid(),
@@ -70,14 +72,17 @@ io.on("connection", (socket)=>{
             chatId,
             createdAt:new Date().toISOString()
         }
-        console.log("new message",messageForRealTime)
+        // console.log("new message",messageForRealTime)
 
         const messageForDb={
             content:message,
             sender:user._id,
-            chatId
+            chat:chatId,
+            
         }
+        
         const UsersSocket=getSockets(members); //all the socket id of user we have to send messsage to
+        
         io.to(UsersSocket).emit(NEW_MESSAGE,
             {messageForRealTime,chatId})
         io.to(UsersSocket).emit(NEW_MESSAGE_ALERT,{chatId  });

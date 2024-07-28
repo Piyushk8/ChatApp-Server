@@ -246,7 +246,7 @@ const getChatDetails= TryCatch(async(req,res,next)=>{
     if(req.query.populate ==="true"){
         var chat = await Chat.findById(chatId).populate("members" , "name avatar").lean();
         if(!chat) return next(new ErrorHandler("Chat not found,404"))
-        
+   
         chat.members = chat.members.map(({_id,name,avatar})=>
                 ({_id,name , avatar:avatar.url})
                 ) 
@@ -254,7 +254,7 @@ const getChatDetails= TryCatch(async(req,res,next)=>{
         var chat = await Chat.findById(chatId);
         
         if(!chat) return next(new ErrorHandler("Chat not found,404"))
-        
+     
        
     }
 

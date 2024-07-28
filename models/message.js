@@ -12,17 +12,20 @@ const MessageSchema =new Schema ({
         required:true
     },
     content:String,
-    attachments:{
-        public_id:{
-            type:String,
-            required:true
+    attachments: [
+        {
+          public_id: {
+            type: String,
+            required: true,
+          },
+          url: {
+            type: String,
+            required: true,
+          },
         },
-        url:{
-            type:String,
-            required:true
-        }},
+      ],
         
-},{timestamps:true});
+    },{timestamps:true});
 
 
 
