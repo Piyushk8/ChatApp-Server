@@ -4,7 +4,7 @@ import { TryCatch } from "./error.js";
 import jwt from "jsonwebtoken"
 
 const AuthMiddleware  =TryCatch(async (req,res,next)=>{
-//    console.log("reached! ",req.cookies.token)
+   console.log("reached! ",req.path)
     const tokenBearer = req.cookies.token
    
    if(!tokenBearer) return next(new ErrorHandler("Please login to access profile", 401))
@@ -19,7 +19,7 @@ const AuthMiddleware  =TryCatch(async (req,res,next)=>{
 const SocketAuthenticator = async(err,socket,next)=>{
 
     try{
-
+        console.log("socket auhtntication")
         const tokenBearer = socket.request.cookies.token
    
         if(!tokenBearer) return next(new ErrorHandler("Please login to access profile", 401))
@@ -31,6 +31,7 @@ const SocketAuthenticator = async(err,socket,next)=>{
         if(!user)  return next(new ErrorHandler("Please Login to acess (no user found)",401))
         socket.user = user
 
+     socket.user = {_id:"669806adbeadf0e0216870c8"}
         return next();
 
     }catch(error){

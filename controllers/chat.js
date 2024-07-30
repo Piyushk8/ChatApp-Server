@@ -32,7 +32,7 @@ const newGroupChat = TryCatch(async(req,res,next)=>{
 
 
 const getMyChat= TryCatch(async(req,res,next)=>{
-    console.log("chat controller")
+   
 
     const chats = await Chat.find({
             members:req.user

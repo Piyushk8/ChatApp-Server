@@ -25,7 +25,7 @@ const io = new Server(server, {
         credentials: true,
     }
 });
-
+app.set("io", io);
 connectDB(process.env.MONGODB_URI)
 
 cloudinary.config({
@@ -48,49 +48,6 @@ app.use(cookieParser())
 
 //all the current users connected to the circuitorserver 
 const socketIds = new Map();
-
-io.on("connection", (socket)=>{
-
-   const user = socket.user;
-//    console.log(socket)
-    socketIds.set(user._id.toString(),socket.id)
-    console.log(`${socket.id} connected to server `)
-
-    socket.on("disconnect",()=>{
-        console.log("user disconnected")
-        socketIds.delete(user._id)
-    })
-    socket.on(NEW_MESSAGE,async({chatId,message,members})=>{
-       
-        const messageForRealTime={
-            content:message,
-            _id:uuid(),
-            sender:{
-                _id:user._id,
-                name:user.name
-            },
-            chatId,
-            createdAt:new Date().toISOString()
-        }
-        // console.log("new message",messageForRealTime)
-
-        const messageForDb={
-            content:message,
-            sender:user._id,
-            chat:chatId,
-            
-        }
-        
-        const UsersSocket=getSockets(members); //all the socket id of user we have to send messsage to
-        
-        io.to(UsersSocket).emit(NEW_MESSAGE,
-            {messageForRealTime,chatId})
-        io.to(UsersSocket).emit(NEW_MESSAGE_ALERT,{chatId  });
-                 await Message.create(messageForDb)
-    })
-
-})
-
 //main app routes start here
 app.use("/api/v1/",mainRouter);
 //SocketAuthentications
@@ -101,6 +58,57 @@ io.use((socket, next)=>{
     })
 
 })
+
+
+io.once("connection", (socket) => {
+    const user = socket.user;
+    socketIds.set(user._id.toString(), socket.id);
+    console.log(socketIds);
+    console.log(socket.id)
+  
+    socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
+      console.log("reacher here")
+      const messageForRealTime = {
+        content: message,
+        _id: uuid(),
+        sender: {
+          _id: user._id,
+          name: user.name,
+        },
+        chat: chatId,
+        createdAt: new Date().toISOString(),
+      };
+  
+      const messageForDB = {
+        content: message,
+        sender: user._id,
+        chat: chatId,
+      };
+  
+      const membersSocket = getSockets(members);
+      io.to(membersSocket).emit(NEW_MESSAGE, {
+        chatId,
+        message: messageForRealTime,
+      });
+      io.to(membersSocket).emit(NEW_MESSAGE_ALERT, { chatId });
+  
+      try {
+        await Message.create(messageForDB);
+      } catch (error) {
+        throw new Error(error);
+      }
+    });
+  
+   
+  
+    socket.on("disconnect", () => {
+      socketIds.delete(user._id.toString());
+      console.log("disconnected")
+    //   onlineUsers.delete(user._id.toString());
+    //   socket.broadcast.emit(ONLINE_USERS, Array.from(onlineUsers));
+    });
+  });
+
 const PORT =3000;
 server.listen(PORT, ()=>{
 console.log(`Server is running on port ${PORT} in ${process.env.NODE_ENV} mode`)
