@@ -15,17 +15,19 @@ import { SocketAuthenticator } from "./middlewares/Auth.js";
 
 
 dotenv.config();
-const app=express();
-const server =  createServer(app)
 
-const io = new Server(server, {
-    cors: {
-        origin: ['http://localhost:5173', 'http://localhost:4173'],
-        methods: ['GET', 'POST'],
-        credentials: true,
-    }
-});
-app.set("io", io);
+const app =express();
+const server  = createServer(app)
+
+
+const io = new Server(server,{
+    cors:{
+        origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}});
+
 connectDB(process.env.MONGODB_URI)
 
 cloudinary.config({
@@ -49,65 +51,70 @@ app.use(cookieParser())
 //all the current users connected to the circuitorserver 
 const socketIds = new Map();
 //main app routes start here
+
 app.use("/api/v1/",mainRouter);
 //SocketAuthentications
+
+
+
+//!Unexpected behavior of sockeAuthenticator
 io.use((socket, next)=>{
-    cookieParser()(socket.request , socket.request.resume, async(err)=>{
-        await SocketAuthenticator(err , socket ,next)
-        next();
+  cookieParser()(socket.request , socket.request.resume, async(err)=>{
+       await SocketAuthenticator(err , socket ,next)
+      
+  })
+ })
+
+
+app.get("/",(req,res)=>[
+    res.json( "hello!")
+])
+
+io.on("connection", (socket)=>{
+  const user = socket.user;
+  socketIds.set(user._id.toString(), socket.id);
+
+  socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
+    const messageForRealTime = {
+      content: message,
+      _id: uuid(),
+      sender: {
+        _id: user._id,
+        name: user.name,
+      },
+      chat: chatId,
+      createdAt: new Date().toISOString(),
+    };
+
+    const messageForDB = {
+      content: message,
+      sender: user._id,
+      chat: chatId,
+    };
+
+    const membersSocket = getSockets(members);
+    io.to(membersSocket).emit(NEW_MESSAGE, {
+      chatId,
+      message: messageForRealTime,
+    });
+    io.to(membersSocket).emit(NEW_MESSAGE_ALERT, { chatId });
+
+    try {
+      await Message.create(messageForDB);
+    } catch (error) {
+      throw new Error(error);
+    }
+  });
+
+    socket.on("disconnect",()=>{
+        console.log(`${socket.id} disconencted`)
     })
 
+    
+   
 })
 
 
-io.once("connection", (socket) => {
-    const user = socket.user;
-    socketIds.set(user._id.toString(), socket.id);
-    console.log(socketIds);
-    console.log(socket.id)
-  
-    socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
-      console.log("reacher here")
-      const messageForRealTime = {
-        content: message,
-        _id: uuid(),
-        sender: {
-          _id: user._id,
-          name: user.name,
-        },
-        chat: chatId,
-        createdAt: new Date().toISOString(),
-      };
-  
-      const messageForDB = {
-        content: message,
-        sender: user._id,
-        chat: chatId,
-      };
-  
-      const membersSocket = getSockets(members);
-      io.to(membersSocket).emit(NEW_MESSAGE, {
-        chatId,
-        message: messageForRealTime,
-      });
-      io.to(membersSocket).emit(NEW_MESSAGE_ALERT, { chatId });
-  
-      try {
-        await Message.create(messageForDB);
-      } catch (error) {
-        throw new Error(error);
-      }
-    });
-  
-   
-  
-    socket.on("disconnect", () => {
-      socketIds.delete(user._id.toString());
-      console.log("disconnected")
-    //   onlineUsers.delete(user._id.toString());
-    //   socket.broadcast.emit(ONLINE_USERS, Array.from(onlineUsers));
-    });
-  });
 
 const PORT =3000;
 server.listen(PORT, ()=>{
