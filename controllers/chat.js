@@ -3,7 +3,7 @@ import ErrorHandler from "../utils/utility.js";
 import {Chat} from "../models/chat.js"
 import {User} from "../models/user.js"
 import {Message} from "../models/message.js"
-import { deleteFileCloudinary, emitEvent } from "../utils/feature.js";
+import { deleteFileCloudinary, emitEvent, uploadFilesToCloudinary } from "../utils/feature.js";
 import {ALERT, NEW_ATTACHMENT, NEW_MESSAGE_ALERT, REFETECH_CHATS} from "../constants/event.js"
 
 
@@ -201,17 +201,17 @@ const leaveGroup = TryCatch(async(req,res,next)=>{
 const SendAttachment = TryCatch(async(req,res,next)=>{
     const{ chatId }= req.body
    
-    
+    console.log("here")
     const chat = await Chat.findById(chatId);
     const me = await User.findById(req.user)
     console.log(me)
     if (!chat) return next(new ErrorHandler("chat not found" ,404))
     
     const files = req.files || [];
-
+    console.log(files)
     if(files.length<1) return next(new ErrorHandler("Attach atleast one" , 400))
 
-    const attachments ={"public_id":"xas","url":"das"};
+    const attachments = await uploadFilesToCloudinary(files)
    
 
     const messageForDb = {
