@@ -11,6 +11,7 @@ const AuthMiddleware  =TryCatch(async (req,res,next)=>{
     const token = tokenBearer.split(" ")[1]
     const success = jwt.verify(token,"JSON_SECRET")
     if(success) console.log("success")
+    
     req.user = success._id;
     next();
     
@@ -20,25 +21,25 @@ const SocketAuthenticator = async(err,socket,next)=>{
 
     try{
         console.log("socket auhtntication")
-        // const tokenBearer = socket.request.cookies.token
+        const tokenBearer = socket.request.cookies.token
    
-        // if(!tokenBearer) return next(new ErrorHandler("Please login to access profile", 401))
-        //  const AuthToken = tokenBearer.split(" ")[1]
+        if(!tokenBearer) return next(new ErrorHandler("Please login to access profile", 401))
+         const AuthToken = tokenBearer.split(" ")[1]
          
-        // const decodedData = jwt.verify(AuthToken ,"JSON_SECRET");
-        // const user = await User.findById(decodedData._id)
+        const decodedData = jwt.verify(AuthToken ,"JSON_SECRET");
+        const user = await User.findById(decodedData._id)
         
-        // if(!user)  return next(new ErrorHandler("Please Login to acess (no user found)",401))
-        // socket.user = user
+        if(!user)  return next(new ErrorHandler("Please Login to acess (no user found)",401))
+        socket.user = user
 
-     socket.user = {_id:"669806adbeadf0e0216870c8"}
+     //socket.user = {_id:"669806adbeadf0e0216870c8"}
         return next();
 
     }catch(error){
         console.log(error)
         return next(new ErrorHandler("Please Login to access",401))
     }
-    return next()
+    
 }
 
 

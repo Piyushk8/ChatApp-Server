@@ -5,13 +5,14 @@ import dotenv from 'dotenv';
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io"; 
 import  { createServer } from "http"
-import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "./constants/event.js";
+import { IS_TYPING, NEW_MESSAGE, NEW_MESSAGE_ALERT, STOP_TYPING } from "./constants/event.js";
 import { v4 as uuid } from "uuid";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
 import cors from "cors"
 import {v2 as cloudinary} from "cloudinary"
 import { SocketAuthenticator } from "./middlewares/Auth.js";
+import { Socket } from "dgram";
 
 
 dotenv.config();
@@ -55,7 +56,7 @@ const socketIds = new Map();
 app.use("/api/v1/",mainRouter);
 //SocketAuthentications
 
-
+app.set("io",io);
 
 //!Unexpected behavior of sockeAuthenticator
 io.use((socket, next)=>{
@@ -85,13 +86,11 @@ io.on("connection", (socket)=>{
       chat: chatId,
       createdAt: new Date().toISOString(),
     };
-
     const messageForDB = {
       content: message,
       sender: user._id,
       chat: chatId,
     };
-
     const membersSocket = getSockets(members);
     io.to(membersSocket).emit(NEW_MESSAGE, {
       chatId,
@@ -106,9 +105,22 @@ io.on("connection", (socket)=>{
     }
   });
 
-    socket.on("disconnect",()=>{
-        console.log(`${socket.id} disconencted`)
-    })
+
+  socket.on(IS_TYPING,(data)=>{
+    const {members,chatId} = data;
+    // console.log("istyping")
+    const userSockets = getSockets(members);
+    socket.to(userSockets).emit(IS_TYPING,{chatId})
+  })
+  socket.on(STOP_TYPING,(data)=>{
+    const {members,chatId} = data;
+    // console.log(data)
+    const userSockets = getSockets(members);
+    socket.to(userSockets).emit(STOP_TYPING,{chatId})
+  })
+  socket.on("disconnect",()=>{
+       console.log(`${socket.id} disconencted`)
+  })
 
     
    

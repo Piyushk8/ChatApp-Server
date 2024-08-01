@@ -8,7 +8,7 @@ import ErrorHandler from "../utils/utility.js";
 import { TryCatch }from "../middlewares/error.js"
 import { getOtherMember } from "../lib/helper.js";
 import { uploadFilesToCloudinary} from "../utils/feature.js";
-import {NEW_REQUEST,NEW_ATTACHMENT,NEW_MESSAGE_ALERT, REFETECH_CHATS} from "../utils/event.js"
+import {NEW_REQUEST,NEW_MESSAGE_ALERT, REFETECH_CHATS} from "../constants/event.js"
 const cookieOption = {
     maxAge:1000*60*60*24*15,sameSite:"none",
     httpOnly:true,
@@ -118,7 +118,7 @@ const SendRequest = TryCatch(async(req,res,next)=>{
     })
 
     emitEvent(
-        req,NEW_REQUEST, [ReceiverId],"request")
+        req,NEW_REQUEST, [ReceiverId])
 
     return res.json({
         message:"done",
@@ -191,12 +191,11 @@ const getNotifications = TryCatch(async(req,res,next)=>{
 
 const getMyFriends = TryCatch(async(req,res,next)=>{
     const chatId = req.query.chatId;
-
   const chats = await Chat.find({
     members: req.user,
     groupChat: false,
   }).populate("members", "name avatar");
-
+ 
   const friends = chats.map(({ members }) => {
     const otherUser = getOtherMember(members, req.user);
 
@@ -206,7 +205,7 @@ const getMyFriends = TryCatch(async(req,res,next)=>{
       avatar: otherUser.avatar.url,
     };
   });
-
+  console.log(friends)
   if (chatId) {
     const chat = await Chat.findById(chatId);
 

@@ -4,7 +4,7 @@ import {Chat} from "../models/chat.js"
 import {User} from "../models/user.js"
 import {Message} from "../models/message.js"
 import { deleteFileCloudinary, emitEvent, uploadFilesToCloudinary } from "../utils/feature.js";
-import {ALERT, NEW_ATTACHMENT, NEW_MESSAGE_ALERT, REFETECH_CHATS} from "../constants/event.js"
+import {ALERT, NEW_MESSAGE, NEW_MESSAGE_ALERT, REFETECH_CHATS} from "../constants/event.js"
 
 
 const newGroupChat = TryCatch(async(req,res,next)=>{
@@ -20,8 +20,8 @@ const newGroupChat = TryCatch(async(req,res,next)=>{
         creator:req.user,
         members:allMembers,
     })
-    emitEvent(req,alert,allMembers,`welcome to ${name} group chat `);
-    emitEvent(req,refetch_chats,members)
+    emitEvent(req,ALERT,allMembers,`welcome to ${name} group chat `);
+    emitEvent(req,REFETECH_CHATS,members)
 
     res.status(200).json({
         "message":"group chat created",
@@ -61,6 +61,7 @@ const getMyChat= TryCatch(async(req,res,next)=>{
 })
 
 const getMyGroup= TryCatch(async(req,res,next)=>{
+    console.log("group route")
        const groups =  await Chat.find({
             members:req.user,
             groupChat:true,
@@ -71,7 +72,7 @@ const getMyGroup= TryCatch(async(req,res,next)=>{
             name,
             _id,
             groupChat,
-            avatar:members.slice(0,3).map((member)=>member.avatar.url)
+            avatar:members.slice(0,3).map((member)=>member.avatar)
         }
    }) 
        return res.status(200).json({
@@ -139,15 +140,21 @@ const RemoveMember=TryCatch( async(req,res,next)=>{
 
     if(chat.members.length < 3)return next (new ErrorHandler("Cannot remove must have 3 members Atleast",400))
 
+    const allChatMembers = chat.members.map((i)=>i.toString())
     chat.members = chat.members.filter((member)=>member.toString()!==userId.toString());
 
     await chat.save();
 
     emitEvent(
         req,
-        alert,
+        ALERT,
         chat.members,
         `${UserToRemove} has been removed`
+    );
+    emitEvent(
+        req,
+        REFETECH_CHATS,
+        allChatMembers,
     );
 
     res.status(200).json({
@@ -168,7 +175,7 @@ const leaveGroup = TryCatch(async(req,res,next)=>{
             
     
     const RemainingMember = chat.members.filter((member)=>member.toString()!==req.user.toString())
-    // if(RemainingMember < 3) {return next(new ErrorHandler("Must have atleast 3 members"))}
+    if(RemainingMember < 3) {return next(new ErrorHandler("Must have atleast 3 members"))}
     if(chat.creator.toString() === req.user){ chat.creator=RemainingMember[0]}
    
     chat.members = RemainingMember;
@@ -200,8 +207,6 @@ const leaveGroup = TryCatch(async(req,res,next)=>{
 
 const SendAttachment = TryCatch(async(req,res,next)=>{
     const{ chatId }= req.body
-   
-    console.log("here")
     const chat = await Chat.findById(chatId);
     const me = await User.findById(req.user)
     console.log(me)
@@ -230,8 +235,8 @@ const SendAttachment = TryCatch(async(req,res,next)=>{
     };
     const message = await Message.create(messageForDb)
          
-    emitEvent(req,NEW_ATTACHMENT ,
-    chat.members, {message:messageForRealtime} , chatId) 
+    emitEvent(req,NEW_MESSAGE,
+    chat.members, {message:messageForRealtime , chatId}) 
     
     emitEvent(req,NEW_MESSAGE_ALERT,chat.members , {chatId})
     
@@ -242,7 +247,7 @@ res.status(200).json({
 
 const getChatDetails= TryCatch(async(req,res,next)=>{
     const chatId = req.params.id;
-
+    console.log(chatId)
     if(req.query.populate ==="true"){
         var chat = await Chat.findById(chatId).populate("members" , "name avatar").lean();
         if(!chat) return next(new ErrorHandler("Chat not found,404"))
@@ -268,9 +273,7 @@ const getChatDetails= TryCatch(async(req,res,next)=>{
 const RenameGroup = TryCatch(async(req,res,next)=>{
 
     const chatId = req.params.id;
-
     const name = req.body.name;
-
    const chat=  await Chat.updateOne({_id:chatId} , {"$set":{name:name}})
 
    if(chat.modifiedCount <1) return next(new ErrorHandler("no Group found",404))
@@ -279,21 +282,23 @@ const RenameGroup = TryCatch(async(req,res,next)=>{
         success:true,
         message:"done name updated"
     })
+
+    emitEvent(req,REFETECH_CHATS,chat.members)
 })
 
 const deleteChat =TryCatch(async(req,res,next)=>{
     const chatId =req.params.id;
-    const chat = await findById(chatId);
-
+    const chat = await Chat.findById(chatId);
+  
     if (req.user.toString()!==chat.creator.toString()) return next(new ErrorHandler("You are not an Admin",400))
     
-    if (!chat.members.includes(req.user.toString())) return next(new ErrorHandler("You are member of the group",400))
+    if (!chat.members.includes(req.user.toString())) return next(new ErrorHandler("You are not member of the group",400))
     
-    chat.
-    res.status(200).json({
-        success:true,
-        message:"Group Deleted Succesfully"
-    })
+
+    // res.status(200).json({
+    //     success:true,
+    //     message:"Group Deleted Succesfully"
+    // })
 //!to delete the Attachmenst from the cloudinary storage 
 
     const public_ids = [];
@@ -312,10 +317,10 @@ const deleteChat =TryCatch(async(req,res,next)=>{
     deleteFileCloudinary(public_ids),
     Chat.deleteOne({_id:chatId}),
     Message.deleteMany({ chat:chatId })])
-
+        const members= chat.members;
    emitEvent(
     req,
-    refetch_chats,
+    REFETECH_CHATS,
     members
    )
 
@@ -330,6 +335,11 @@ const getMessages = TryCatch(async(req,res,next)=>{
     const {page = 1 } = req.query;
     const messagePerPage =20;
     const skip = (page -1)*messagePerPage;
+    const chat = await Chat.findById(chatId);
+
+    if(!chat) return next(new ErrorHandler("Chat not found",404))
+    if(!chat.members.includes(req.user.toString())) return next(new ErrorHandler("You are not member",400))
+
     const [messages,totalMessageCount] = await Promise.all([
         Message.find({
             chat:chatId
