@@ -265,13 +265,12 @@ res.status(200).json({
 const RenameGroup = TryCatch(async(req,res,next)=>{
     const chatId = req.params?.id;
     const name = req.body?.name;
-    //const chat=  await Chat.updateOne({_id:chatId} , {"$set":{name:name}})
     const chat = await Chat.findById(chatId)
 
     chat.name =  name;
     chat.save();
    if(chat.modifiedCount <1) return next(new ErrorHandler("no Group found",404))
-    console.log(chat.members)
+    
     res.status(200).json({
         success:true,
         message:"done name updated"

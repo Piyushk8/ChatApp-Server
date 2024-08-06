@@ -20,7 +20,7 @@ ChatRouter.get("/:id" ,getChatDetails)
 ChatRouter.put("/:id" ,RenameGroup)
 ChatRouter.delete("/:id",deleteChat)
 
-//ChatRouter.use(errorMiddleware)
+ChatRouter.use(errorMiddleware)
 
 
 //send attachments
