@@ -5,14 +5,14 @@ import dotenv from 'dotenv';
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io"; 
 import  { createServer } from "http"
-import { IS_TYPING, NEW_MESSAGE, NEW_MESSAGE_ALERT, STOP_TYPING } from "./constants/event.js";
+import { IS_TYPING, NEW_MESSAGE, NEW_MESSAGE_ALERT, CHAT_JOINED,CHAT_LEFT, STOP_TYPING, ONLINE_USER } from "./constants/event.js";
 import { v4 as uuid } from "uuid";
 import { getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
 import cors from "cors"
 import {v2 as cloudinary} from "cloudinary"
 import { SocketAuthenticator } from "./middlewares/Auth.js";
-import { Socket } from "dgram";
+
 
 
 dotenv.config();
@@ -38,9 +38,9 @@ cloudinary.config({
   });
  
 app.use(cors({
-    origin: 'http://localhost:5173', // React app URL
+    origin: 'http://localhost:5173', 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // Enable the Access-Control-Allow-Credentials header
+    credentials: true, 
     optionsSuccessStatus: 204
   }))
 // createGroupChats(10);//faker
@@ -51,6 +51,7 @@ app.use(cookieParser())
 
 //all the current users connected to the circuitorserver 
 const socketIds = new Map();
+const onlineUsers = new Set(); 
 //main app routes start here
 
 app.use("/api/v1/",mainRouter);
@@ -108,18 +109,33 @@ io.on("connection", (socket)=>{
 
   socket.on(IS_TYPING,(data)=>{
     const {members,chatId} = data;
-    // console.log("istyping")
     const userSockets = getSockets(members);
     socket.to(userSockets).emit(IS_TYPING,{chatId})
   })
   socket.on(STOP_TYPING,(data)=>{
     const {members,chatId} = data;
-    // console.log(data)
     const userSockets = getSockets(members);
     socket.to(userSockets).emit(STOP_TYPING,{chatId})
   })
+  socket.on(CHAT_JOINED,({userId,members})=>{
+   console.log("chatJoined",userId)
+   onlineUsers.add(userId.toString())
+
+   const membersSocket = getSockets(members)
+   io.to(membersSocket).emit(ONLINE_USER,Array.from(onlineUsers));
+  })
+  socket.on(CHAT_LEFT,({userId,members})=>{
+    onlineUsers.delete(userId.toString())
+
+    const membersSocket = getSockets(members)
+    io.to(membersSocket).emit(ONLINE_USER,Array.from(onlineUsers));
+  })
+
   socket.on("disconnect",()=>{
        console.log(`${socket.id} disconencted`)
+       onlineUsers.delete(user._id.toString())
+       socketIds.delete(user._id.toString())
+       
   })
 
     

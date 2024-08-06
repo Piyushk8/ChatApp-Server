@@ -67,7 +67,6 @@ const getMyChat= TryCatch(async(req,res,next)=>{
 })
 
 const getMyGroup= TryCatch(async(req,res,next)=>{
-    console.log("group route")
     const groups =  await Chat.find({
         members:req.user,
             groupChat:true,
@@ -108,9 +107,6 @@ const getChatDetails= TryCatch(async(req,res,next)=>{
     })
 })
 
-//! Future bug 
-//! it is adding duplicate members in the array of members 
-//cannot add member already in the group
 const addMembers = TryCatch(async(req,res,next)=>{
     const {chatId , members} = req.body;
     
@@ -122,7 +118,7 @@ const addMembers = TryCatch(async(req,res,next)=>{
             if(chat.creator.toString() !== req.user.toString()) return next(new ErrorHandler("You are not Admin" , 403))
 
 //to get User info of members using memberId
-const allMembersPromise = members.map((i)=>User.findById(i,"name"))
+    const allMembersPromise = members.map((i)=>User.findById(i,"name"))
     const allNewMembers = await Promise.all(allMembersPromise);
 
     const UniqueMembers = allNewMembers.filter((i)=>!chat.members.includes(i._id.toString()))
@@ -141,7 +137,6 @@ const allMembersPromise = members.map((i)=>User.findById(i,"name"))
         chat.members,
         `${allUsersName} has been added in the group`
     )
-    console.log(allNewMembers,"all new members")
     emitEvent(req,
         REFETECH_CHATS
         ,allNewMembersId);
@@ -153,14 +148,13 @@ const allMembersPromise = members.map((i)=>User.findById(i,"name"))
 
 })
 
-
 const RemoveMember=TryCatch( async(req,res,next)=>{
     const  {userId , chatId} = req.body;
     const [chat , UserToRemove] = await Promise.all([
         Chat.findById(chatId),
         User.findById(userId , "name")
     ])
-    console.log(chat)
+    
     if(!chat || !UserToRemove) return next(new ErrorHandler("Chat Not found or No members provided" , 400))
 
     if(!chat.groupChat) return next(new ErrorHandler("Not a group Chat" , 400))
@@ -289,16 +283,11 @@ const RenameGroup = TryCatch(async(req,res,next)=>{
 const deleteChat =TryCatch(async(req,res,next)=>{
     const chatId =req.params.id;
     const chat = await Chat.findById(chatId);
-    console.log(req.user , chatId)
+
     if (req.user.toString()!==chat.creator?.toString() && chat.groupChat===true) return next(new ErrorHandler("You are not an Admin",400))
-    
     if (!chat.members.includes(req.user.toString())) return next(new ErrorHandler("You are not member of the group",400))
     
 
-    // res.status(200).json({
-    //     success:true,
-    //     message:"Group Deleted Succesfully"
-    // })
 //!to delete the Attachmenst from the cloudinary storage 
 
     const public_ids = [];

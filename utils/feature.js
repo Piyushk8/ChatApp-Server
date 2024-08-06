@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken"
 import { v4 as uuid } from 'uuid';
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
+import dotenv from 'dotenv'; 
+dotenv.config();
 
 const cookieOption = {
     maxAge:1000*60*60*24*15,sameSite:"none",
@@ -22,7 +24,7 @@ const connectDB = (uri) => {
   
 //to send jwt token to cookies
 const sendToken = (res,user,code,message)=>{
-    const token = jwt.sign({_id:user._id }, "JSON_SECRET")
+    const token = jwt.sign({_id:user._id }, process.env.JWT_SECRET)
     return res.status(code).cookie("token" ,"Bearer "+ token ,cookieOption).json({
         sucsess:true,
     message
@@ -32,7 +34,7 @@ const sendToken = (res,user,code,message)=>{
 const emitEvent = (req,event,user,data)=>{
   const userSockets = getSockets(user);
   const io = req.app.get("io");
-  console.log("usersokets",userSockets)
+  // console.log("usersokets",userSockets)
   //console.log(userSockets,event,data)
   io.to(userSockets).emit(event,data)
   
