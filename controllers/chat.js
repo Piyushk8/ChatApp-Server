@@ -20,8 +20,14 @@ const newGroupChat = TryCatch(async(req,res,next)=>{
         creator:req.user,
         members:allMembers,
     })
-    emitEvent(req,ALERT,allMembers,`welcome to ${name} group chat `);
-    emitEvent(req,REFETECH_CHATS,members)
+    emitEvent(req
+        ,ALERT
+        ,allMembers
+        ,`welcome to ${name} group chat `);
+    
+    emitEvent(req
+        ,REFETECH_CHATS
+        ,allMembers)
 
     res.status(200).json({
         "message":"group chat created",
@@ -62,23 +68,44 @@ const getMyChat= TryCatch(async(req,res,next)=>{
 
 const getMyGroup= TryCatch(async(req,res,next)=>{
     console.log("group route")
-       const groups =  await Chat.find({
-            members:req.user,
+    const groups =  await Chat.find({
+        members:req.user,
             groupChat:true,
-       }).populate("members", "name avatar")
-
-       const transformedGroups =groups.map(({_id,members,groupChat,name})=>{
+        }).populate("members", "name avatar")
+        
+        const transformedGroups =groups.map(({_id,members,groupChat,name})=>{
         return{
             name,
             _id,
             groupChat,
             avatar:members.slice(0,3).map((member)=>member.avatar)
         }
-   }) 
+    }) 
        return res.status(200).json({
         transformedGroups,
         success:true
        })
+})
+const getChatDetails= TryCatch(async(req,res,next)=>{
+    const chatId = req.params.id;
+    
+    if(req.query.populate ==="true"){
+        var chat = await Chat.findById(chatId).populate("members" , "name avatar").lean();
+        if(!chat) return next(new ErrorHandler("Chat not found,404"))
+   
+        chat.members = chat.members.map(({_id,name,avatar})=>
+                ({_id,name , avatar:avatar.url})
+                ) 
+    }else{
+        var chat = await Chat.findById(chatId);
+        
+        if(!chat) return next(new ErrorHandler("Chat not found,404"))
+    }
+
+    res.status(200).json({
+        success:true,
+        chat
+    })
 })
 
 //! Future bug 
@@ -86,17 +113,16 @@ const getMyGroup= TryCatch(async(req,res,next)=>{
 //cannot add member already in the group
 const addMembers = TryCatch(async(req,res,next)=>{
     const {chatId , members} = req.body;
-
+    
     const chat = await Chat.findById(chatId);
-
     if(!chat || !members) return next(new ErrorHandler("Chat Not found or No members provided" , 400))
 
-    if(!chat.groupChat) return next(new ErrorHandler("Not a group Chat" , 400))
+        if(!chat.groupChat) return next(new ErrorHandler("Not a group Chat" , 400))
 
-    if(chat.creator.toString() !== req.user.toString()) return next(new ErrorHandler("You are not Admin" , 403))
+            if(chat.creator.toString() !== req.user.toString()) return next(new ErrorHandler("You are not Admin" , 403))
 
 //to get User info of members using memberId
-    const allMembersPromise = members.map((i)=>User.findById(i,"name"))
+const allMembersPromise = members.map((i)=>User.findById(i,"name"))
     const allNewMembers = await Promise.all(allMembersPromise);
 
     const UniqueMembers = allNewMembers.filter((i)=>!chat.members.includes(i._id.toString()))
@@ -108,14 +134,17 @@ const addMembers = TryCatch(async(req,res,next)=>{
 
     await chat.save();
     const allUsersName = allNewMembers.map((i)=>i.name).join(",")
-
+    const allNewMembersId = allNewMembers.map((i)=>i._id)
     emitEvent(
         req,
-        alert,
+        ALERT,
         chat.members,
         `${allUsersName} has been added in the group`
     )
-    emitEvent(req,refetch_chats,chat.members);
+    console.log(allNewMembers,"all new members")
+    emitEvent(req,
+        REFETECH_CHATS
+        ,allNewMembersId);
 
     return res.status(200).json({
         success:true,
@@ -167,13 +196,10 @@ const RemoveMember=TryCatch( async(req,res,next)=>{
 
 const leaveGroup = TryCatch(async(req,res,next)=>{
     const chatId = req.params.id.toString();
-    
-    
     const chat= await Chat.findById(chatId) 
    
     if(!chat) return next( new ErrorHandler("Chat not found" , 404))
-            
-    
+                
     const RemainingMember = chat.members.filter((member)=>member.toString()!==req.user.toString())
     if(RemainingMember < 3) {return next(new ErrorHandler("Must have atleast 3 members"))}
     if(chat.creator.toString() === req.user){ chat.creator=RemainingMember[0]}
@@ -185,25 +211,20 @@ const leaveGroup = TryCatch(async(req,res,next)=>{
 
     emitEvent(
         req,
-        alert,
+        ALERT,
         chat.members,
         `${username} left`
     )
     emitEvent(
         req,
-        refetch_chats,
-        chat.members,
-
-
+        REFETECH_CHATS,
+        [...chat.members,req.user],
     )
 
     res.json({
-        success:true,
-        
+        success:true,        
     })
-
 })
-
 
 const SendAttachment = TryCatch(async(req,res,next)=>{
     const{ chatId }= req.body
@@ -245,39 +266,18 @@ res.status(200).json({
 })
 })
 
-const getChatDetails= TryCatch(async(req,res,next)=>{
-    const chatId = req.params.id;
-    console.log(chatId)
-    if(req.query.populate ==="true"){
-        var chat = await Chat.findById(chatId).populate("members" , "name avatar").lean();
-        if(!chat) return next(new ErrorHandler("Chat not found,404"))
-   
-        chat.members = chat.members.map(({_id,name,avatar})=>
-                ({_id,name , avatar:avatar.url})
-                ) 
-    }else{
-        var chat = await Chat.findById(chatId);
-        
-        if(!chat) return next(new ErrorHandler("Chat not found,404"))
-     
-       
-    }
-
-    res.status(200).json({
-        success:true,
-        chat
-    })
-})
 
 
 const RenameGroup = TryCatch(async(req,res,next)=>{
+    const chatId = req.params?.id;
+    const name = req.body?.name;
+    //const chat=  await Chat.updateOne({_id:chatId} , {"$set":{name:name}})
+    const chat = await Chat.findById(chatId)
 
-    const chatId = req.params.id;
-    const name = req.body.name;
-   const chat=  await Chat.updateOne({_id:chatId} , {"$set":{name:name}})
-
+    chat.name =  name;
+    chat.save();
    if(chat.modifiedCount <1) return next(new ErrorHandler("no Group found",404))
-   
+    console.log(chat.members)
     res.status(200).json({
         success:true,
         message:"done name updated"
@@ -289,8 +289,8 @@ const RenameGroup = TryCatch(async(req,res,next)=>{
 const deleteChat =TryCatch(async(req,res,next)=>{
     const chatId =req.params.id;
     const chat = await Chat.findById(chatId);
-  
-    if (req.user.toString()!==chat.creator.toString()) return next(new ErrorHandler("You are not an Admin",400))
+    console.log(req.user , chat)
+    if (req.user.toString()!==chat.creator?.toString() && chat.groupChat===true) return next(new ErrorHandler("You are not an Admin",400))
     
     if (!chat.members.includes(req.user.toString())) return next(new ErrorHandler("You are not member of the group",400))
     

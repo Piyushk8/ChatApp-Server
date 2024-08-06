@@ -84,13 +84,14 @@ const SearchUser = TryCatch(async(req,res,next)=>{
         members.filter((member)=> member.toString() !== req.user))} )
 
     const UsersExceptFriendsWithMe = await User.find({
-        _id:{$nin : allUsersFromChat},
+        _id:{$nin : [...allUsersFromChat,req.user] },
         name:{$regex:name,$options:"i"}
-    })
+    }).lean();
+
+    
 
     const Users = UsersExceptFriendsWithMe.map(({_id,avatar,name})=>({_id,name,avatar}))
-   
-
+    
     res.status(200).json({
         Users,
         success:true
@@ -188,7 +189,6 @@ const getNotifications = TryCatch(async(req,res,next)=>{
 
 })
 
-
 const getMyFriends = TryCatch(async(req,res,next)=>{
     const chatId = req.query.chatId;
   const chats = await Chat.find({
@@ -224,6 +224,7 @@ const getMyFriends = TryCatch(async(req,res,next)=>{
     });
   }
 });
+
 const Logout = TryCatch(
     async(req,res,next)=>{
         return res.status(200).cookie("token","",cookieOption).json({

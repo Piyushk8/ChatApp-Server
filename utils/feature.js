@@ -32,8 +32,8 @@ const sendToken = (res,user,code,message)=>{
 const emitEvent = (req,event,user,data)=>{
   const userSockets = getSockets(user);
   const io = req.app.get("io");
-  console.log(event)
-
+  console.log("usersokets",userSockets)
+  //console.log(userSockets,event,data)
   io.to(userSockets).emit(event,data)
   
 }
