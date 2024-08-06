@@ -289,7 +289,7 @@ const RenameGroup = TryCatch(async(req,res,next)=>{
 const deleteChat =TryCatch(async(req,res,next)=>{
     const chatId =req.params.id;
     const chat = await Chat.findById(chatId);
-    console.log(req.user , chat)
+    console.log(req.user , chatId)
     if (req.user.toString()!==chat.creator?.toString() && chat.groupChat===true) return next(new ErrorHandler("You are not an Admin",400))
     
     if (!chat.members.includes(req.user.toString())) return next(new ErrorHandler("You are not member of the group",400))
