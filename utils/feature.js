@@ -27,6 +27,7 @@ const sendToken = (res,user,code,message)=>{
     const token = jwt.sign({_id:user._id }, process.env.JWT_SECRET)
     return res.status(code).cookie("token" ,"Bearer "+ token ,cookieOption).json({
         sucsess:true,
+        user,
     message
     })
 }
