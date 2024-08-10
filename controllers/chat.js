@@ -216,7 +216,8 @@ const leaveGroup = TryCatch(async(req,res,next)=>{
     )
 
     res.json({
-        success:true,        
+        success:true,
+        message:"Group Left"        
     })
 })
 
@@ -311,9 +312,10 @@ const deleteChat =TryCatch(async(req,res,next)=>{
     REFETECH_CHATS,
     members
    )
+  
 
    res.status(200).json({success:true,
-    message:"done deleted group or chat"
+    message:chat?.groupChat ? "Group Deleted":"Removed friend" 
    })
 });
 
