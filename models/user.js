@@ -14,6 +14,9 @@ password:{
     type:String,
     required:true,
     select:false  },
+isOnline:{
+    type:Boolean
+},
 avatar:{
     public_id:{
         type:String,

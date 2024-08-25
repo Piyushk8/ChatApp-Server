@@ -42,7 +42,7 @@ const getMyChat= TryCatch(async(req,res,next)=>{
 
     const chats = await Chat.find({
             members:req.user
-    }).populate("members" , "name  avatar")
+    }).populate("members" , "_id name  avatar")
 
     const transformedChats = chats.map(({_id,name,members,groupChat})=>{
       const getOtherMember = (members,userId)=>{ 

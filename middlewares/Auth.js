@@ -12,6 +12,7 @@ const AuthMiddleware  =TryCatch(async (req,res,next)=>{
    if(!tokenBearer) return next(new ErrorHandler("Please login to access profile", 401))
     const token = tokenBearer.split(" ")[1]
     const success = jwt.verify(token,process.env.JWT_SECRET)
+    console.log(success)
     if(success) console.log("success")
     
     req.user = success._id;
@@ -24,13 +25,13 @@ const SocketAuthenticator = async(err,socket,next)=>{
     try{
         console.log("socket auhtntication")
         const tokenBearer = socket.request.cookies.token
-   
+    
         if(!tokenBearer) return next(new ErrorHandler("Please login to access profile", 401))
          const AuthToken = tokenBearer.split(" ")[1]
          
         const decodedData = jwt.verify(AuthToken ,process.env.JWT_SECRET);
         const user = await User.findById(decodedData._id)
-        
+       
         if(!user)  return next(new ErrorHandler("Please Login to acess (no user found)",401))
         socket.user = user
 

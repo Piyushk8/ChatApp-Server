@@ -14,6 +14,8 @@ const schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+    pinned:{
+      type:Boolean},
     members: [
       {
         type: Schema.Types.ObjectId,

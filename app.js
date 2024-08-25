@@ -5,13 +5,16 @@ import dotenv from 'dotenv';
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io"; 
 import  { createServer } from "http"
-import { IS_TYPING, NEW_MESSAGE, NEW_MESSAGE_ALERT, CHAT_JOINED,CHAT_LEFT, STOP_TYPING, ONLINE_USER } from "./constants/event.js";
+import { IS_TYPING, NEW_MESSAGE, NEW_MESSAGE_ALERT, STOP_TYPING, ONLINE_USER, USER_STATUS_CHANGE } from "./constants/event.js";
 import { v4 as uuid } from "uuid";
-import { getSockets } from "./lib/helper.js";
+import { getOnlineUsers, getSockets } from "./lib/helper.js";
 import { Message } from "./models/message.js";
 import cors from "cors"
 import {v2 as cloudinary} from "cloudinary"
 import { SocketAuthenticator } from "./middlewares/Auth.js";
+import { User } from "./models/user.js";
+import { Chat } from "./models/chat.js";
+
 
 
 
@@ -82,9 +85,22 @@ app.get("/",(req,res)=>[
     res.json( "hello!")
 ])
 
-io.on("connection", (socket)=>{
+
+
+io.on("connection", async(socket)=>{
   const user = socket.user;
   socketIds.set(user._id.toString(), socket.id);
+  if(user){
+    const res  = await User.updateOne({_id:user._id},{
+      $set:{isOnline:true}
+    })
+      const {onlineMemberIds} = await getOnlineUsers(user._id)
+      io.to(socket.id).emit("myOnlineFriends",{onlineMemberIds})
+
+     const onlineMemberSockets = getSockets(onlineMemberIds[0]?.onlineMembers)
+     io.to(onlineMemberSockets).emit(USER_STATUS_CHANGE,{userId:user?.id,status:"online"})
+     
+  }
 
   socket.on(NEW_MESSAGE, async ({ chatId, members, message }) => {
     const messageForRealTime = {
@@ -127,24 +143,20 @@ io.on("connection", (socket)=>{
     const userSockets = getSockets(members);
     socket.to(userSockets).emit(STOP_TYPING,{chatId})
   })
-  socket.on(CHAT_JOINED,({userId,members})=>{
-   console.log("chatJoined",userId)
-   onlineUsers.add(userId.toString())
-
-   const membersSocket = getSockets(members)
-   io.to(membersSocket).emit(ONLINE_USER,Array.from(onlineUsers));
-  })
-  socket.on(CHAT_LEFT,({userId,members})=>{
-    onlineUsers.delete(userId.toString())
-
-    const membersSocket = getSockets(members)
-    io.to(membersSocket).emit(ONLINE_USER,Array.from(onlineUsers));
-  })
-
-  socket.on("disconnect",()=>{
+  
+  socket.on("disconnect",async()=>{
        console.log(`${socket.id} disconencted`)
-       onlineUsers.delete(user._id.toString())
-       socketIds.delete(user._id.toString())
+       if(user){
+        const res  = await User.updateOne({_id:user.id},{
+          $set:{isOnline:false}
+        })
+        }
+          const {onlineMemberIds} = await getOnlineUsers(user._id)
+          const onlineMemberSockets = getSockets(onlineMemberIds[0]?.onlineMembers)
+          io.to(onlineMemberSockets).emit(USER_STATUS_CHANGE,{userId:user?.id,status:"offline"})
+          
+          onlineUsers.delete(user._id.toString())
+          socketIds.delete(user._id.toString())
        
   })
 
