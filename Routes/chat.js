@@ -14,6 +14,7 @@ ChatRouter.put("/removemember",RemoveMember)
 ChatRouter.delete("/leave/:id",leaveGroup)
 ChatRouter.post("/message",attachmentsMulter, SendAttachment )
 ChatRouter.get("/message/:id",getMessages)
+//ChatRouter.put("/pin",pinchat)
 //below routes should be below all routes 
 //might be confused by "/anyroute"
 ChatRouter.get("/:id" ,getChatDetails)

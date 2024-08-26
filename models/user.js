@@ -1,4 +1,5 @@
 import mongoose, { model, Schema } from "mongoose";
+import { array } from "zod";
 
 
 
@@ -17,6 +18,12 @@ password:{
 isOnline:{
     type:Boolean
 },
+pinned: [
+    {
+        type:String,
+        ref:"Chat"
+    }
+],
 avatar:{
     public_id:{
         type:String,

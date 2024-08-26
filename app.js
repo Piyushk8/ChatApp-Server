@@ -1,6 +1,6 @@
 import express, { urlencoded } from "express"
 import mainRouter from "./Routes/mainRouter.js";
-import { connectDB } from "./utils/feature.js";
+import { connectDB, pinChat } from "./utils/feature.js";
 import dotenv from 'dotenv';
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io"; 
@@ -126,12 +126,15 @@ io.on("connection", async(socket)=>{
     io.to(membersSocket).emit(NEW_MESSAGE_ALERT, { chatId });
 
     try {
-      await Message.create(messageForDB);
+      const results = await Promise.allSettled([
+        Message.create(messageForDB),
+        Chat.findByIdAndUpdate(chatId, { $set: { lastMessage: message } })
+      ]);
     } catch (error) {
-      throw new Error(error);
+      console.error('Unexpected error:', error);
     }
+    
   });
-
 
   socket.on(IS_TYPING,(data)=>{
     const {members,chatId} = data;
@@ -142,6 +145,11 @@ io.on("connection", async(socket)=>{
     const {members,chatId} = data;
     const userSockets = getSockets(members);
     socket.to(userSockets).emit(STOP_TYPING,{chatId})
+  })
+  socket.on("pinchat",(data)=>{
+    const {chatId ,pinned}= data; 
+    console.log(chatId)
+    pinChat({chatId,pinned,userSocket:socket?.id,userId:user?.id}) 
   })
   
   socket.on("disconnect",async()=>{
@@ -163,7 +171,7 @@ io.on("connection", async(socket)=>{
     
    
 })
-
+export {io}
 
 
 const PORT =3000;

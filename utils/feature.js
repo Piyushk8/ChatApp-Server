@@ -5,6 +5,10 @@ import { v4 as uuid } from 'uuid';
 import { v2 as cloudinary } from "cloudinary";
 import { getBase64, getSockets } from "../lib/helper.js";
 import dotenv from 'dotenv'; 
+import { Chat } from "../models/chat.js";
+import { REFETECH_CHATS } from "../constants/event.js";
+import { io } from "../app.js";
+import { User } from "../models/user.js";
 dotenv.config();
 
 const cookieOption = {
@@ -40,6 +44,41 @@ const emitEvent = (req,event,user,data)=>{
   io.to(userSockets).emit(event,data)
   
 }
+
+export const pinChat =async({chatId,pinned,userSocket,userId})=>{
+  try{ 
+    if(pinned ===true){
+      const user = await User.findById(userId);
+    
+      if (!user.pinned.includes(chatId)) {
+          // If friendId is not in the friends array, add it
+          await User.updateOne(
+              { _id: userId },
+              { $push: { pinned:chatId } }
+          );
+      }
+    }
+    else if(pinned===false){
+      const user = await User.findById(userId);
+    
+      if (user?.pinned.includes(chatId)) {
+          // If friendId is not in the friends array, add it
+          await User.updateOne(
+              { _id: userId },
+              { $pull: { pinned:chatId } }
+          );
+      }
+      c
+    }
+    io.to(userSocket).emit(REFETECH_CHATS)
+    
+      //return {success:true}
+    }catch(err){
+      console.log(err)
+      return err
+    }
+  }
+
 
 const uploadFilesToCloudinary = async (files = []) => {
   const uploadPromises = files.map((file) => {

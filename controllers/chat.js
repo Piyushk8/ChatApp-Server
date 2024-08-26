@@ -42,14 +42,18 @@ const getMyChat= TryCatch(async(req,res,next)=>{
 
     const chats = await Chat.find({
             members:req.user
-    }).populate("members" , "_id name  avatar")
+    })
+    .sort({pinned:1,isOnline:1})
+    .populate("members" , "_id name  avatar")
 
-    const transformedChats = chats.map(({_id,name,members,groupChat})=>{
+    const transformedChats = chats.map(({_id,name,members,updatedAt,groupChat,lastMessage})=>{
       const getOtherMember = (members,userId)=>{ 
         return members.find((member) => member._id.toString()!==userId.toString())
         
       }
         return{
+            updatedAt,
+            lastMessage,
         _id,
         groupChat,
         avatar:groupChat?members.slice(0,3).map(({avatar})=>avatar.url) : [getOtherMember(members,req.user)],
@@ -357,6 +361,7 @@ const getMessages = TryCatch(async(req,res,next)=>{
 
 
 
-export {getChatDetails, newGroupChat,getMyGroup ,addMembers, getMyChat ,RemoveMember,leaveGroup ,SendAttachment
+
+export {getChatDetails,newGroupChat,getMyGroup ,addMembers, getMyChat ,RemoveMember,leaveGroup ,SendAttachment
     ,RenameGroup, deleteChat,getMessages
 }
