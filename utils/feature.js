@@ -56,17 +56,20 @@ export const pinChat =async({chatId,pinned,userSocket,userId})=>{
               { _id: userId },
               { $push: { pinned:chatId } }
           );
+
+          console.log(user)
+        }
       }
-    }
-    else if(pinned===false){
-      const user = await User.findById(userId);
-    
-      if (user?.pinned.includes(chatId)) {
+      else if(pinned===false){
+        const user = await User.findById(userId);
+        
+        if (user?.pinned.includes(chatId)) {
           // If friendId is not in the friends array, add it
           await User.updateOne(
-              { _id: userId },
-              { $pull: { pinned:chatId } }
+            { _id: userId },
+            { $pull: { pinned:chatId } }
           );
+          console.log(user)
       }
       c
     }

@@ -148,7 +148,7 @@ io.on("connection", async(socket)=>{
   })
   socket.on("pinchat",(data)=>{
     const {chatId ,pinned}= data; 
-    console.log(chatId)
+    //console.log(chatId)
     pinChat({chatId,pinned,userSocket:socket?.id,userId:user?.id}) 
   })
   

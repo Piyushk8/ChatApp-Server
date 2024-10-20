@@ -62,7 +62,7 @@ const getMyChat= TryCatch(async(req,res,next)=>{
        }
     })
 
-   
+   console.log(transformedChats)
     return res.status(200).json({
         success:true,
       transformedChats
@@ -105,6 +105,7 @@ const getChatDetails= TryCatch(async(req,res,next)=>{
         if(!chat) return next(new ErrorHandler("Chat not found,404"))
     }
 
+    console.log("chatDetails",chat)
     res.status(200).json({
         success:true,
         chat
